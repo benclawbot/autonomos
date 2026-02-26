@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #0A0E1A;
+  --foreground: #ffffff;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-6 py-3 bg-white text-black font-medium rounded-full hover:bg-gray-200 transition;
+  }
+  
+  .btn-secondary {
+    @apply px-6 py-3 border border-white/20 rounded-full hover:bg-white/5 transition;
+  }
+  
+  .input-field {
+    @apply w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-white/30;
+  }
+  
+  .card {
+    @apply p-6 rounded-2xl bg-white/5 border border-white/5;
+  }
+}
