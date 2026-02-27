@@ -57,3 +57,4 @@ All warnings are about using `<img>` instead of Next.js `<Image>` component:
 ## Summary
 
 The platform builds and runs successfully. All pages load correctly. TypeScript has no errors. API routes are functional but require database configuration for full operation.
+# Auto-deploy trigger
