@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient()
+// Lazy-load Prisma to avoid build-time initialization
+const getPrisma = () => {
+  const { PrismaClient } = require('@prisma/client')
+  return new PrismaClient()
+}
 
 export async function GET(request: Request) {
   try {
+    const prisma = getPrisma()
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category')
     const type = searchParams.get('type')
@@ -42,6 +46,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const prisma = getPrisma()
     const body = await request.json()
     const gig = await prisma.gig.create({
       data: { ...body, status: 'ACTIVE' }

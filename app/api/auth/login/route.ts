@@ -1,12 +1,16 @@
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 
-const prisma = new PrismaClient()
+// Lazy-load Prisma to avoid build-time initialization
+const getPrisma = () => {
+  const { PrismaClient } = require('@prisma/client')
+  return new PrismaClient()
+}
 
 export async function POST(request: Request) {
   try {
     const { email, password } = await request.json()
+    const prisma = getPrisma()
     
     const user = await prisma.user.findUnique({ where: { email } })
     if (!user) {
