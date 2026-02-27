@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 
+// Force dynamic - don't pre-render at build time
+export const dynamic = 'force-dynamic'
+
 // Lazy-load Prisma to avoid build-time initialization
 const getPrisma = () => {
   const { PrismaClient } = require('@prisma/client')
