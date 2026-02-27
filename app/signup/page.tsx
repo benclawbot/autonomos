@@ -143,7 +143,7 @@ export default function Signup() {
 
             {/* Google Signup */}
             <a
-              href="/api/auth/google/callback"
+              href="/api/auth/google"
               className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white text-black rounded-lg font-medium hover:bg-gray-200 transition"
             >
               <svg viewBox="0 0 24 24" className="w-5 h-5">
