@@ -1,13 +1,36 @@
 import { NextResponse } from 'next/server'
 
-// Lazy Supabase client
-const getSupabase = () => {
-  const { createClient } = require('@supabase/supabase-js')
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
-  )
-}
+// Mock data for development
+const MOCK_GIGS = [
+  {
+    id: "1",
+    title: "Professional Logo Design",
+    description: "I will create a unique logo for your brand",
+    type: "HUMAN",
+    price: 50,
+    deliveryDays: 3,
+    revisionRounds: 2,
+    status: "ACTIVE",
+    totalOrders: 156,
+    rating: 4.9,
+    seller: { id: "1", username: "designpro", fullName: "Alex Designer", avatarUrl: null, rating: 4.9, totalSales: 234 },
+    category: { id: "1", name: "Logo Design", slug: "logo-design" }
+  },
+  {
+    id: "2",
+    title: "AI-Powered Content Writing",
+    description: "High-quality blog posts and articles using AI",
+    type: "AI",
+    price: 30,
+    deliveryDays: 1,
+    revisionRounds: 1,
+    status: "ACTIVE",
+    totalOrders: 89,
+    rating: 4.8,
+    seller: { id: "2", username: "contentwriter", fullName: "Sarah Writer", avatarUrl: null, rating: 4.8, totalSales: 156 },
+    category: { id: "2", name: "Content Writing", slug: "content-writing" }
+  }
+]
 
 export async function GET(request: Request) {
   try {
@@ -18,97 +41,44 @@ export async function GET(request: Request) {
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
 
-    const supabase = getSupabase()
+    let gigs = [...MOCK_GIGS]
 
-    let query = supabase
-      .from('gigs')
-      .select(`
-        *,
-        seller:users(id, username, fullName, avatarUrl, rating, totalSales),
-        category:categories(id, name, slug)
-      `)
-      .eq('status', 'ACTIVE')
-
+    // Filter
     if (category) {
-      query = query.eq('category.slug', category)
+      gigs = gigs.filter(g => g.category.slug === category)
     }
-
     if (type) {
-      query = query.eq('type', type.toUpperCase())
+      gigs = gigs.filter(g => g.type === type.toUpperCase())
     }
-
     if (search) {
-      query = query.ilike('title', `%${search}%`)
+      gigs = gigs.filter(g => g.title.toLowerCase().includes(search.toLowerCase()))
     }
 
     const from = (page - 1) * limit
-    const to = from + limit - 1
-
-    const { data, error, count } = await query
-      .range(from, to)
-      .order('totalOrders', { ascending: false })
-
-    if (error) throw error
+    const to = from + limit
+    const paginatedGigs = gigs.slice(from, to)
 
     return NextResponse.json({
-      gigs: data,
+      gigs: paginatedGigs,
       pagination: {
         page,
         limit,
-        total: count,
-        pages: Math.ceil((count || 0) / limit),
+        total: gigs.length,
+        pages: Math.ceil(gigs.length / limit),
       },
     })
   } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const supabase = getSupabase()
-
-    const {
-      title,
-      description,
-      type,
-      categoryId,
-      pricing,
-      deliveryDays,
-      revisionRounds,
-      thumbnailUrl,
-      tags,
-      sellerId,
-    } = await request.json()
-
-    const { data, error } = await supabase
-      .from('gigs')
-      .insert({
-        title,
-        description,
-        type: type || 'HUMAN',
-        categoryId,
-        pricing,
-        deliveryDays: deliveryDays || 7,
-        revisionRounds: revisionRounds || 2,
-        thumbnailUrl,
-        tags: tags || [],
-        sellerId,
-        status: 'ACTIVE',
-      })
-      .select()
-      .single()
-
-    if (error) throw error
-
-    return NextResponse.json({ gig: data })
+    const body = await request.json()
+    // Mock creation
+    const newGig = { id: Date.now().toString(), ...body, status: "ACTIVE" }
+    return NextResponse.json({ gig: newGig })
   } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
