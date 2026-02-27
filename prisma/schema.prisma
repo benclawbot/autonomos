@@ -11,60 +11,60 @@ datasource db {
 
 // Users (Bots and Humans)
 model User {
-  id              String    @id @default(cuid())
-  email           String    @unique
-  username        String    @unique
-  passwordHash    String?
-  
+  id           String  @id @default(cuid())
+  email        String  @unique
+  username     String  @unique
+  passwordHash String?
+
   // Profile
-  fullName        String?
-  avatarUrl       String?
-  bio             String?
-  userType        UserType  @default(HUMAN)
-  
+  fullName  String?
+  avatarUrl String?
+  bio       String?
+  userType  UserType @default(HUMAN)
+
   // Bot-specific
-  apiKey          String?   @unique
-  apiEndpoint     String?
-  walletAddress   String?
-  
+  apiKey        String? @unique
+  apiEndpoint   String?
+  walletAddress String?
+
   // Human-specific
-  hourlyRate      Int?
-  skills          String[]
-  
+  hourlyRate Int?
+  skills     String[]
+
   // Verification
-  emailVerified   Boolean   @default(false)
-  idVerified      Boolean   @default(false)
-  phoneVerified   Boolean   @default(false)
-  
+  emailVerified Boolean @default(false)
+  idVerified    Boolean @default(false)
+  phoneVerified Boolean @default(false)
+
   // Stats
-  rating          Float     @default(0)
-  totalSales      Int       @default(0)
-  totalPurchases  Int       @default(0)
-  responseTimeAvg Int?      // minutes
-  
+  rating          Float @default(0)
+  totalSales      Int   @default(0)
+  totalPurchases  Int   @default(0)
+  responseTimeAvg Int? // minutes
+
   // Earnings
-  balance         Float     @default(0)
-  pendingBalance  Float     @default(0)
-  
+  balance        Float @default(0)
+  pendingBalance Float @default(0)
+
   // Stripe
   stripeCustomerId String?
   stripeAccountId  String?
-  
-  isActive       Boolean   @default(true)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  gigs           Gig[]
-  ordersAsBuyer  Order[]   @relation("BuyerOrders")
-  ordersAsSeller Order[]   @relation("SellerOrders")
-  requests       Request[]
-  quotes         Quote[]
-  reviewsGiven   Review[]  @relation("Reviewer")
-  reviewsReceived Review[] @relation("Reviewee")
-  messagesSent   Message[] @relation("Sender")
-  notifications  Notification[]
-  
+  gigs            Gig[]
+  ordersAsBuyer   Order[]        @relation("BuyerOrders")
+  ordersAsSeller  Order[]        @relation("SellerOrders")
+  requests        Request[]
+  quotes          Quote[]
+  reviewsGiven    Review[]       @relation("Reviewer")
+  reviewsReceived Review[]       @relation("Reviewee")
+  messagesSent    Message[]      @relation("MessageSender")
+  notifications   Notification[]
+
   @@map("users")
 }
 
@@ -76,67 +76,67 @@ enum UserType {
 
 // Categories
 model Category {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  slug        String   @unique
+  id          String  @id @default(cuid())
+  name        String  @unique
+  slug        String  @unique
   icon        String?
   description String?
   parentId    String?
-  
+
   isBotAllowed   Boolean @default(true)
   isHumanAllowed Boolean @default(true)
-  
-  parent      Category? @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children   Category[] @relation("CategoryHierarchy")
-  
-  gigs       Gig[]
-  requests   Request[]
-  
-  createdAt  DateTime @default(now())
-  
+
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryHierarchy")
+
+  gigs     Gig[]
+  requests Request[]
+
+  createdAt DateTime @default(now())
+
   @@map("categories")
 }
 
 // Gigs (Services)
 model Gig {
-  id          String   @id @default(cuid())
+  id          String  @id @default(cuid())
   title       String
   description String?
-  type        GigType  @default(HUMAN)
-  
+  type        GigType @default(HUMAN)
+
   // Pricing (JSON)
-  pricing     Json
-  
-  deliveryDays Int    @default(7)
-  revisionRounds Int   @default(2)
-  
+  pricing Json
+
+  deliveryDays   Int @default(7)
+  revisionRounds Int @default(2)
+
   // Media
-  thumbnailUrl   String?
-  demoVideoUrl   String?
-  galleryUrls    String[]
-  
+  thumbnailUrl String?
+  demoVideoUrl String?
+  galleryUrls  String[]
+
   // Tags
-  tags        String[]
-  
+  tags String[]
+
   // Status
-  status      GigStatus @default(DRAFT)
-  
-  views       Int       @default(0)
-  totalOrders Int       @default(0)
-  
+  status GigStatus @default(DRAFT)
+
+  views       Int @default(0)
+  totalOrders Int @default(0)
+
   // Relations
-  sellerId    String
-  seller      User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-  
-  categoryId  String
-  category    Category @relation(fields: [categoryId], references: [id])
-  
-  orders      Order[]
-  reviews     Review[]
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  sellerId String
+  seller   User   @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  orders  Order[]
+  reviews Review[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@map("gigs")
 }
 
@@ -155,49 +155,49 @@ enum GigStatus {
 
 // Orders
 model Order {
-  id            String      @id @default(cuid())
-  orderNumber   String      @unique
-  
+  id          String @id @default(cuid())
+  orderNumber String @unique
+
   // Relations
-  gigId         String
-  gig           Gig         @relation(fields: [gigId], references: [id])
-  
-  buyerId       String
-  buyer         User        @relation("BuyerOrders", fields: [buyerId], references: [id])
-  
-  sellerId      String
-  seller        User        @relation("SellerOrders", fields: [sellerId], references: [id])
-  
+  gigId String
+  gig   Gig    @relation(fields: [gigId], references: [id])
+
+  buyerId String
+  buyer   User   @relation("BuyerOrders", fields: [buyerId], references: [id])
+
+  sellerId String
+  seller   User   @relation("SellerOrders", fields: [sellerId], references: [id])
+
   // Order details
   tierName      String?
   originalPrice Int
   platformFee   Int
   sellerPayout  Int
-  currency      String      @default("USD")
-  
+  currency      String  @default("USD")
+
   // Status
-  status        OrderStatus @default(PENDING)
-  
+  status OrderStatus @default(PENDING)
+
   // Payment
   stripePaymentIntentId String?
   stripeTransferId      String?
-  paidAt        DateTime?
-  deliveredAt   DateTime?
-  completedAt   DateTime?
-  
+  paidAt                DateTime?
+  deliveredAt           DateTime?
+  completedAt           DateTime?
+
   // Content
   requirements  Json?
   deliveryFiles Json?
-  
+
   // Timeline
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-  
-  reviews       Review[]
-  messages      Message[]
-  disputes      Dispute[]
-  timeline      OrderTimeline[]
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reviews  Review[]
+  messages Message[]
+  disputes Dispute[]
+  timeline OrderTimeline[]
+
   @@map("orders")
 }
 
@@ -215,29 +215,29 @@ enum OrderStatus {
 
 // Service Requests (Buyer posts needs)
 model Request {
-  id          String        @id @default(cuid())
+  id          String @id @default(cuid())
   title       String
   description String
-  
+
   // Relations
-  buyerId     String
-  buyer       User          @relation(fields: [buyerId], references: [id])
-  
-  categoryId  String
-  category    Category      @relation(fields: [categoryId], references: [id])
-  
-  budgetMin   Int?
-  budgetMax   Int?
-  deadline    DateTime?
+  buyerId String
+  buyer   User   @relation(fields: [buyerId], references: [id])
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  budgetMin     Int?
+  budgetMax     Int?
+  deadline      DateTime?
   preferredType PreferredType @default(ANY)
-  
-  status      RequestStatus @default(OPEN)
-  
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  
-  quotes      Quote[]
-  
+
+  status RequestStatus @default(OPEN)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  quotes Quote[]
+
   @@map("requests")
 }
 
@@ -257,22 +257,22 @@ enum PreferredType {
 
 // Quotes (Seller responses to requests)
 model Quote {
-  id          String   @id @default(cuid())
-  
-  requestId   String
-  request     Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  
-  sellerId    String
-  seller      User     @relation(fields: [sellerId], references: [id])
-  
-  price       Int
+  id String @id @default(cuid())
+
+  requestId String
+  request   Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  sellerId String
+  seller   User   @relation(fields: [sellerId], references: [id])
+
+  price        Int
   deliveryDays Int
-  message     String?
-  
-  status      QuoteStatus @default(PENDING)
-  
-  createdAt   DateTime   @default(now())
-  
+  message      String?
+
+  status QuoteStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+
   @@map("quotes")
 }
 
@@ -285,70 +285,72 @@ enum QuoteStatus {
 
 // Reviews
 model Review {
-  id          String   @id @default(cuid())
-  
-  orderId     String
-  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  
-  reviewerId  String
-  reviewer    User     @relation("Reviewer", fields: [reviewerId], references: [id])
-  
-  revieweeId  String
-  reviewee    User     @relation("Reviewee", fields: [revieweeId], references: [id])
-  
+  id String @id @default(cuid())
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  reviewerId String
+  reviewer   User   @relation("Reviewer", fields: [reviewerId], references: [id])
+
+  revieweeId String
+  reviewee   User   @relation("Reviewee", fields: [revieweeId], references: [id])
+
   // Ratings
-  quality     Int
-  communication Int?
-  timeliness  Int?
+  quality         Int
+  communication   Int?
+  timeliness      Int?
   professionalism Int?
-  
+
   // Content
   publicReview String?
-  isPublic    Boolean  @default(true)
-  
-  createdAt   DateTime @default(now())
-  
+  isPublic     Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  Gig       Gig?     @relation(fields: [gigId], references: [id])
+  gigId     String?
+
   @@unique([orderId, reviewerId])
   @@map("reviews")
 }
 
 // Messages
 model Message {
-  id          String   @id @default(cuid())
-  
-  orderId     String
-  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  
-  senderId    String
-  sender      User     @relation(fields: [senderId], references: [id])
-  
+  id String @id @default(cuid())
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  senderId String
+  sender   User   @relation("MessageSender", fields: [senderId], references: [id])
+
   content     String
   attachments Json?
-  isRead      Boolean  @default(false)
-  
-  createdAt   DateTime @default(now())
-  
+  isRead      Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
   @@map("messages")
 }
 
 // Disputes
 model Dispute {
-  id          String       @id @default(cuid())
-  
-  orderId     String
-  order       Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  
-  raiserId    String
-  
-  reason      String
-  evidence    Json?
-  
-  status      DisputeStatus @default(OPEN)
-  resolution  String?
-  resolvedAt  DateTime?
-  
-  createdAt   DateTime     @default(now())
-  
+  id String @id @default(cuid())
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  raiserId String
+
+  reason   String
+  evidence Json?
+
+  status     DisputeStatus @default(OPEN)
+  resolution String?
+  resolvedAt DateTime?
+
+  createdAt DateTime @default(now())
+
   @@map("disputes")
 }
 
@@ -361,36 +363,36 @@ enum DisputeStatus {
 
 // Order Timeline (Audit log)
 model OrderTimeline {
-  id          String   @id @default(cuid())
-  
-  orderId     String
-  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  
-  action      String
-  
-  actorId     String?
-  details     Json?
-  
-  createdAt   DateTime @default(now())
-  
+  id String @id @default(cuid())
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  action String
+
+  actorId String?
+  details Json?
+
+  createdAt DateTime @default(now())
+
   @@map("order_timeline")
 }
 
 // Notifications
 model Notification {
-  id          String   @id @default(cuid())
-  
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  type        String
-  title       String?
-  message     String?
-  link        String?
-  
-  isRead      Boolean  @default(false)
-  
-  createdAt   DateTime @default(now())
-  
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type    String
+  title   String?
+  message String?
+  link    String?
+
+  isRead Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
   @@map("notifications")
 }
