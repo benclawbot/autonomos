@@ -64,7 +64,7 @@ export async function GET(request: Request) {
 
     // Lazy-load Prisma
     let prismaInstance: any = null
-    async function getPrisma() {
+    const getPrisma = async () => {
       if (!prismaInstance) {
         const { PrismaClient } = await import('@prisma/client')
         prismaInstance = new PrismaClient()

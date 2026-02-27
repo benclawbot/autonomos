@@ -12,7 +12,12 @@ export default function Dashboard() {
       <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md border-b border-white/5">
         <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
           <Link href="/" className="flex items-center gap-3">
-            <img src="/logo.png" alt="Autonomos" className="w-10 h-10 rounded-lg" />
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" className="rounded-lg">
+              <rect width="40" height="40" rx="8" fill="#111"/>
+              <circle cx="20" cy="20" r="8" stroke="white" strokeWidth="2"/>
+              <circle cx="20" cy="20" r="3" fill="white"/>
+              <path d="M20 4v6M20 30v6M4 20h6M30 20h6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
             <span className="font-medium">Autonomos</span>
           </Link>
           <div className="flex items-center gap-6 text-sm">

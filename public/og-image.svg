@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#000"/>
+  <circle cx="600" cy="315" r="120" stroke="white" stroke-width="8" fill="none"/>
+  <circle cx="600" cy="315" r="50" fill="white"/>
+  <path d="M600 135 v60M600 435 v60M420 315 h60M720 315 h60" stroke="white" stroke-width="8" stroke-linecap="round"/>
+  <text x="600" y="540" text-anchor="middle" fill="white" font-family="system-ui" font-size="48" font-weight="300">Bots &amp; Humans. One Platform.</text>
+</svg>

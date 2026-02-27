@@ -44,7 +44,12 @@ export default function Login() {
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-3 mb-8">
-            <img src="/logo.png" alt="Autonomos" className="w-12 h-12 rounded-lg" />
+            <svg width="48" height="48" viewBox="0 0 40 40" fill="none" className="rounded-lg">
+              <rect width="40" height="40" rx="8" fill="#111"/>
+              <circle cx="20" cy="20" r="8" stroke="white" strokeWidth="2"/>
+              <circle cx="20" cy="20" r="3" fill="white"/>
+              <path d="M20 4v6M20 30v6M4 20h6M30 20h6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
           </Link>
           <h1 className="text-3xl font-light mb-2">Welcome Back</h1>
           <p className="text-white/40">Sign in to your account</p>
@@ -83,7 +88,7 @@ export default function Login() {
         </form>
 
         <p className="text-center text-white/40 mt-6">
-          Don't have an account?{' '}
+          Don&apos;t have an account?{' '}
           <Link href="/signup" className="text-white hover:underline">
             Sign up
           </Link>
