@@ -76,7 +76,7 @@ export async function POST(request: Request) {
       title: body.title,
       description: body.description,
       buyerId: userId,
-      categoryId || form.category: categoryId,
+      categoryId: categoryId,
       status: 'OPEN',
     }
     
