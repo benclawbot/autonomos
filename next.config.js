@@ -4,7 +4,7 @@ const path = require('path')
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  output: 'export',
+  // Removed 'export' to enable API routes
   images: {
     unoptimized: true,
   },
