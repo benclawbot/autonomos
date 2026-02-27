@@ -3,15 +3,19 @@ import { NextResponse } from 'next/server'
 // Force dynamic - don't pre-render at build time
 export const dynamic = 'force-dynamic'
 
-// Lazy-load Prisma to avoid build-time initialization
-const getPrisma = () => {
-  const { PrismaClient } = require('@prisma/client')
-  return new PrismaClient()
+// Lazy-load Prisma using dynamic import to avoid build-time evaluation
+let prismaInstance: any = null
+async function getPrisma() {
+  if (!prismaInstance) {
+    const { PrismaClient } = await import('@prisma/client')
+    prismaInstance = new PrismaClient()
+  }
+  return prismaInstance
 }
 
 export async function GET(request: Request) {
   try {
-    const prisma = getPrisma()
+    const prisma = await getPrisma()
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category')
     const type = searchParams.get('type')
@@ -49,7 +53,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const prisma = getPrisma()
+    const prisma = await getPrisma()
     const body = await request.json()
     const gig = await prisma.gig.create({
       data: { ...body, status: 'ACTIVE' }

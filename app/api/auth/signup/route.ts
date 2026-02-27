@@ -4,15 +4,19 @@ import bcrypt from 'bcryptjs'
 // Force dynamic - don't pre-render at build time
 export const dynamic = 'force-dynamic'
 
-// Lazy-load Prisma to avoid build-time initialization
-const getPrisma = () => {
-  const { PrismaClient } = require('@prisma/client')
-  return new PrismaClient()
+// Lazy-load Prisma using dynamic import to avoid build-time evaluation
+let prismaInstance: any = null
+async function getPrisma() {
+  if (!prismaInstance) {
+    const { PrismaClient } = await import('@prisma/client')
+    prismaInstance = new PrismaClient()
+  }
+  return prismaInstance
 }
 
 export async function POST(request: Request) {
   try {
-    const prisma = getPrisma()
+    const prisma = await getPrisma()
     const { email, password, username, fullName, userType } = await request.json()
     
     const existing = await prisma.user.findFirst({
