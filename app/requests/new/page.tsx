@@ -88,13 +88,13 @@ export default function PostRequest() {
               className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white/30"
             >
               <option value="">Select a category</option>
-              <option value="cmm4rxs7c0001okdoggnsjxk4">Telegram Bot</option>
-              <option value="discord-bot">Discord Bot</option>
-              <option value="whatsapp-bot">WhatsApp Bot</option>
-              <option value="ai-agent">AI Agent</option>
-              <option value="automation">Automation</option>
-              <option value="web-development">Web Development</option>
-              <option value="mobile-app">Mobile App</option>
+              <option value="cmm4rxs7c0002okdowti44z0v">Telegram Bots</option>
+              <option value="cmm4rxs7c0001okdoggnsjxk4">Discord Bot</option>
+              <option value="cmm4rxs7c0003okdolhzmyfwd">WhatsApp Bot</option>
+              <option value="cmm4rxs7c0004okdo0l8nmi1k">AI Agent</option>
+              <option value="cmm4rxs7c0008okdom5y3vioz">Automation</option>
+              <option value="cmm4rxs7c0005okdo58y2x2m6">Web Development</option>
+              <option value="cmm4rxs7c0006okdo3p45vyot">Mobile App</option>
               <option value="api-development">API Development</option>
             </select>
           </div>
