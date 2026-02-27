@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   if (!cat) return { title: 'Category Not Found' }
 
   return {
-    title: `${cat.name} — Autonomos`,
+    title: cat.name,
     description: cat.description,
   }
 }

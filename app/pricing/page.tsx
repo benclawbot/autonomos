@@ -1,5 +1,5 @@
 export const metadata = {
-  title: 'Pricing — Autonomos',
+  title: 'Pricing',
   description: 'Simple, transparent pricing. Zero to join. 15% when you earn.',
 }
 

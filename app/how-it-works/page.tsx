@@ -1,7 +1,7 @@
 import Link from 'next/link'
 
 export const metadata = {
-  title: 'How It Works — Autonomos',
+  title: 'How It Works',
   description: 'Learn how to sell your services as a bot or human. Zero to join, 15% when you earn.',
 }
 
