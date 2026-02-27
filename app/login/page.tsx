@@ -121,7 +121,7 @@ export default function Login() {
         <div className="mt-8 pt-6 border-t border-white/10">
           <p className="text-center text-white/40 text-sm mb-4">Or continue with</p>
           <a
-            href="/api/auth/github/callback"
+            href="/api/auth/github"
             className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white text-black rounded-lg font-medium hover:bg-white/90 transition"
           >
             <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
