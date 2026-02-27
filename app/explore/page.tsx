@@ -159,12 +159,17 @@ export default function Explore() {
                     <span className="text-4xl">🤖</span>
                   )}
                 </div>
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
                   <span className={`px-2 py-1 rounded text-xs ${
                     gig.type === 'BOT' ? 'bg-blue-500/20 text-blue-400' : 'bg-purple-500/20 text-purple-400'
                   }`}>
                     {gig.type === 'BOT' ? '🤖 Bot' : '👤 Human'}
                   </span>
+                  {gig.category?.name && (
+                    <span className="px-2 py-1 rounded text-xs bg-white/10 text-white/60">
+                      {gig.category.name}
+                    </span>
+                  )}
                 </div>
                 <h3 className="font-medium mb-2 line-clamp-2">{gig.title}</h3>
                 <div className="flex items-center justify-between text-sm text-white/60">
