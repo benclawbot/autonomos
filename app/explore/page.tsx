@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 
 interface Gig {
   id: string
   title: string
+  description: string
   type: string
   thumbnailUrl: string
   pricing: any
@@ -16,28 +18,50 @@ interface Gig {
   }
   category: {
     name: string
+    slug: string
   }
 }
+
+const categories = [
+  { name: 'All Categories', slug: '' },
+  { name: 'Web Design', slug: 'web-design' },
+  { name: 'Bot Building', slug: 'bot-building' },
+  { name: 'Automation', slug: 'automation' },
+  { name: 'Data Work', slug: 'data' },
+  { name: 'AI / ML', slug: 'ai-ml' },
+  { name: 'Human Tasks', slug: 'human-tasks' },
+  { name: 'SEO', slug: 'seo' },
+  { name: 'Content', slug: 'content' },
+]
 
 export default function Explore() {
   const [gigs, setGigs] = useState<Gig[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
+  const [search, setSearch] = useState('')
+  const [category, setCategory] = useState('')
 
   useEffect(() => {
     fetchGigs()
-  }, [filter])
+  }, [filter, category])
 
   async function fetchGigs() {
     setLoading(true)
-    const url = filter !== 'all' 
-      ? `/api/gigs?type=${filter}`
-      : '/api/gigs'
+    const params = new URLSearchParams()
+    if (filter !== 'all') params.set('type', filter)
+    if (category) params.set('category', category)
+    if (search) params.set('search', search)
     
+    const url = `/api/gigs?${params.toString()}`
     const res = await fetch(url)
     const data = await res.json()
     setGigs(data.gigs || [])
     setLoading(false)
+  }
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    fetchGigs()
   }
 
   return (
@@ -65,20 +89,52 @@ export default function Explore() {
         <h1 className="text-4xl font-light mb-8">Explore Services</h1>
 
         {/* Filters */}
-        <div className="flex gap-4 mb-8">
-          {['all', 'bot', 'human'].map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-4 py-2 rounded-full text-sm ${
-                filter === f
-                  ? 'bg-white text-black'
-                  : 'bg-white/10 text-white/60 hover:text-white'
-              }`}
-            >
-              {f === 'all' ? 'All' : f === 'bot' ? '🤖 Bots' : '👤 Humans'}
-            </button>
-          ))}
+        <div className="flex flex-col md:flex-row gap-4 mb-8">
+          {/* Search Box */}
+          <form onSubmit={handleSearch} className="flex-1">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search services..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full px-4 py-3 pl-12 bg-white/5 border border-white/10 rounded-full text-white placeholder-white/40 focus:outline-none focus:border-white/30"
+              />
+              <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+          </form>
+
+          {/* Category Dropdown */}
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="px-4 py-3 bg-white/5 border border-white/10 rounded-full text-white focus:outline-none focus:border-white/30 cursor-pointer"
+          >
+            {categories.map((cat) => (
+              <option key={cat.slug} value={cat.slug} className="bg-black">
+                {cat.name}
+              </option>
+            ))}
+          </select>
+
+          {/* Type Filter */}
+          <div className="flex gap-2">
+            {['all', 'bot', 'human'].map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`px-4 py-2 rounded-full text-sm ${
+                  filter === f
+                    ? 'bg-white text-black'
+                    : 'bg-white/10 text-white/60 hover:text-white'
+                }`}
+              >
+                {f === 'all' ? 'All' : f === 'bot' ? '🤖 Bots' : '👤 Humans'}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Grid */}
