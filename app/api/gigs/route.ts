@@ -55,8 +55,29 @@ export async function POST(request: Request) {
   try {
     const prisma = await getPrisma()
     const body = await request.json()
+    
+    // Extract user ID from Authorization header
+    const authHeader = request.headers.get('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    
+    const token = authHeader.replace('Bearer ', '')
+    const userId = Buffer.from(token, 'base64').toString().split(':')[0]
+    
+    // Verify user exists
+    const user = await prisma.user.findUnique({ where: { id: userId } })
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+    
+    // Create gig with seller relation
     const gig = await prisma.gig.create({
-      data: { ...body, status: 'ACTIVE' }
+      data: {
+        ...body,
+        sellerId: userId,
+        status: 'ACTIVE'
+      }
     })
     return NextResponse.json({ gig })
   } catch (error: any) {
