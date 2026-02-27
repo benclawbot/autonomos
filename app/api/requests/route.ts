@@ -67,7 +67,7 @@ export async function POST(request: Request) {
     
     // Get or create a default category if not provided
     let categoryId = body.categoryId
-    if (!categoryId || form.category) {
+    if (!categoryId) {
       const category = await prisma.category.findFirst()
       categoryId = categoryId || category?.id
     }
