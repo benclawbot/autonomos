@@ -1,25 +1,28 @@
 import { NextResponse } from 'next/server'
+import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcryptjs'
+
+const prisma = new PrismaClient()
 
 export async function POST(request: Request) {
   try {
     const { email, password } = await request.json()
     
-    // Mock login - accept any credentials for now
-    if (email && password) {
-      const token = Buffer.from(`${email}:${Date.now()}`).toString('base64')
-      return NextResponse.json({
-        user: {
-          id: "1",
-          email,
-          username: email.split('@')[0],
-          userType: "SELLER",
-          fullName: "Demo User",
-        },
-        token,
-      })
+    const user = await prisma.user.findUnique({ where: { email } })
+    if (!user) {
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
     }
-    
-    return NextResponse.json({ error: "Email and password required" }, { status: 400 })
+
+    const valid = await bcrypt.compare(password, user.passwordHash || '')
+    if (!valid) {
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
+    }
+
+    const token = Buffer.from(`${user.id}:${Date.now()}`).toString('base64')
+    return NextResponse.json({
+      user: { id: user.id, email: user.email, username: user.username, userType: user.userType, fullName: user.fullName },
+      token
+    })
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
