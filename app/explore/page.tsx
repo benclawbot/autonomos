@@ -24,14 +24,16 @@ interface Gig {
 
 const categories = [
   { name: 'All Categories', slug: '' },
-  { name: 'Web Design', slug: 'web-design' },
-  { name: 'Bot Building', slug: 'bot-building' },
+  { name: 'Discord Bots', slug: 'discord-bots' },
+  { name: 'Telegram Bots', slug: 'telegram-bots' },
+  { name: 'WhatsApp Bots', slug: 'whatsapp-bots' },
+  { name: 'AI Agents', slug: 'ai-agents' },
+  { name: 'Web Development', slug: 'web-development' },
+  { name: 'Mobile Apps', slug: 'mobile-apps' },
+  { name: 'Data Analysis', slug: 'data-analysis' },
   { name: 'Automation', slug: 'automation' },
-  { name: 'Data Work', slug: 'data' },
-  { name: 'AI / ML', slug: 'ai-ml' },
-  { name: 'Human Tasks', slug: 'human-tasks' },
-  { name: 'SEO', slug: 'seo' },
-  { name: 'Content', slug: 'content' },
+  { name: 'API Development', slug: 'api-development' },
+  { name: 'Chatbots', slug: 'chatbots' },
 ]
 
 export default function Explore() {

@@ -4,18 +4,29 @@ import { NextResponse } from 'next/server'
 export const dynamic = 'force-dynamic'
 
 // GitHub OAuth config
-const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID || 'Ov23li0OGwLtGrEG76ol'
+const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID || ''
 const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET || ''
 const CALLBACK_URL = process.env.GITHUB_CALLBACK_URL || 'https://autonomos-gamma.vercel.app/api/auth/github/callback'
 
 export async function GET(request: Request) {
   try {
+    // Check if OAuth is configured
+    if (!GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET) {
+      return NextResponse.redirect(new URL('/login?error=github_not_configured', request.url))
+    }
+
     const { searchParams } = new URL(request.url)
     const code = searchParams.get('code')
+    const error = searchParams.get('error')
+
+    // Handle OAuth errors from GitHub
+    if (error) {
+      return NextResponse.redirect(new URL(`/login?error=github_${error}`, request.url))
+    }
 
     if (!code) {
       // Redirect to GitHub OAuth
-      const authUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(CALLBACK_URL)}&scope=read:user+repo`
+      const authUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(CALLBACK_URL)}&scope=read:user+user:email+repo`
       return NextResponse.redirect(authUrl)
     }
 
@@ -36,7 +47,8 @@ export async function GET(request: Request) {
     const tokenData = await tokenResponse.json()
 
     if (tokenData.error) {
-      return NextResponse.json({ error: tokenData.error_description }, { status: 400 })
+      console.error('GitHub token error:', tokenData)
+      return NextResponse.redirect(new URL('/login?error=github_token_failed', request.url))
     }
 
     const accessToken = tokenData.access_token
@@ -49,18 +61,33 @@ export async function GET(request: Request) {
       },
     })
 
+    if (!userResponse.ok) {
+      console.error('GitHub user fetch failed:', userResponse.status)
+      return NextResponse.redirect(new URL('/login?error=github_user_failed', request.url))
+    }
+
     const githubUser = await userResponse.json()
 
     // Get user email (may need separate call)
-    const emailResponse = await fetch('https://api.github.com/user/emails', {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Accept': 'application/json',
-      },
-    })
-
-    const emails = await emailResponse.json()
-    const primaryEmail = emails.find((e: any) => e.primary)?.email || emails[0]?.email
+    let primaryEmail = null
+    try {
+      const emailResponse = await fetch('https://api.github.com/user/emails', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Accept': 'application/json',
+        },
+      })
+      
+      if (emailResponse.ok) {
+        const emails = await emailResponse.json()
+        if (Array.isArray(emails)) {
+          primaryEmail = emails.find((e: any) => e.primary)?.email || emails[0]?.email
+        }
+      }
+    } catch (emailErr) {
+      console.error('Failed to fetch GitHub email:', emailErr)
+      // Continue without email - we'll generate one
+    }
 
     // Lazy-load Prisma
     let prismaInstance: any = null

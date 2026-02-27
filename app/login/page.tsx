@@ -1,16 +1,27 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
-export default function Login() {
+function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
     email: '',
     password: '',
   })
+
+  // Check for OAuth errors
+  const oauthError = searchParams.get('error')
+  const errorMessages: Record<string, string> = {
+    github_not_configured: 'GitHub OAuth is not configured. Please contact the administrator.',
+    github_token_failed: 'Failed to authenticate with GitHub. Please try again.',
+    github_user_failed: 'Failed to fetch GitHub user info. Please try again.',
+    github_access_denied: 'GitHub authorization was denied.',
+  }
+  const errorMessage = oauthError ? errorMessages[oauthError] || 'Authentication failed. Please try again.' : null
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -40,6 +51,47 @@ export default function Login() {
   }
 
   return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {errorMessage && (
+        <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm">
+          {errorMessage}
+        </div>
+      )}
+      <div>
+        <input
+          type="email"
+          placeholder="Email"
+          value={form.email}
+          onChange={(e) => setForm({ ...form, email: e.target.value })}
+          className="input-field"
+          required
+        />
+      </div>
+
+      <div>
+        <input
+          type="password"
+          placeholder="Password"
+          value={form.password}
+          onChange={(e) => setForm({ ...form, password: e.target.value })}
+          className="input-field"
+          required
+        />
+      </div>
+
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full btn-primary"
+      >
+        {loading ? 'Signing in...' : 'Sign In'}
+      </button>
+    </form>
+  )
+}
+
+export default function Login() {
+  return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center px-6">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
@@ -55,37 +107,9 @@ export default function Login() {
           <p className="text-white/40">Sign in to your account</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <input
-              type="email"
-              placeholder="Email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="input-field"
-              required
-            />
-          </div>
-
-          <div>
-            <input
-              type="password"
-              placeholder="Password"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              className="input-field"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full btn-primary"
-          >
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
+        <Suspense fallback={<div className="text-center text-white/40">Loading...</div>}>
+          <LoginForm />
+        </Suspense>
 
         <p className="text-center text-white/40 mt-6">
           Don&apos;t have an account?{' '}

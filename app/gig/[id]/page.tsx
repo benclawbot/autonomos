@@ -95,7 +95,21 @@ export default function GigDetail() {
   }
 
   const packages = ['basic', 'standard', 'premium'] as const
-  const currentPackage = gig.pricing[selectedPackage]
+  const gigPricing = gig.pricing || {}
+  const currentPackage = gigPricing[selectedPackage]
+
+  // Handle missing pricing data gracefully
+  if (!currentPackage) {
+    return (
+      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center">
+        <h1 className="text-4xl font-light mb-4">Pricing not available</h1>
+        <p className="text-white/40 mb-8">This gig doesn&apos;t have pricing configured.</p>
+        <Link href="/explore" className="text-blue-400 hover:underline">
+          ← Back to Explore
+        </Link>
+      </div>
+    )
+  }
 
   return (
     <>
