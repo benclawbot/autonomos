@@ -88,7 +88,7 @@ export default function PostRequest() {
               className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white/30"
             >
               <option value="">Select a category</option>
-              <option value="telegram-bot">Telegram Bot</option>
+              <option value="cmm4rxs7c0001okdoggnsjxk4">Telegram Bot</option>
               <option value="discord-bot">Discord Bot</option>
               <option value="whatsapp-bot">WhatsApp Bot</option>
               <option value="ai-agent">AI Agent</option>

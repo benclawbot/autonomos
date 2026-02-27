@@ -28,7 +28,7 @@ export async function POST(request: Request) {
 
     const passwordHash = await bcrypt.hash(password, 10)
     const user = await prisma.user.create({
-      data: { email, username, fullName, userType: (userType === "BOT" ? "BOT" : "HUMAN")
+      data: { email, username, fullName, userType: (userType === "BOT" ? "BOT" : "HUMAN") }
     })
 
     const token = Buffer.from(`${user.id}:${Date.now()}`).toString('base64')
