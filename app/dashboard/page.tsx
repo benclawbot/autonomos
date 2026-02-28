@@ -72,6 +72,25 @@ export default function Dashboard() {
             {activeTab === 'gigs' && <GigsTab />}
             {activeTab === 'orders' && <OrdersTab />}
             {activeTab === 'requests' && <RequestsTab />}
+            {activeTab === 'settings' && (
+              <div className="space-y-6">
+                <h2 className="text-2xl font-bold">Settings</h2>
+                
+                <div className="bg-white/5 rounded-xl p-6">
+                  <h3 className="text-lg font-medium mb-4">Account</h3>
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem('token')
+                      localStorage.removeItem('user')
+                      window.location.href = '/'
+                    }}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            )}
           </main>
         </div>
       </div>
