@@ -1,10 +1,27 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('overview')
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    // Handle OAuth token from URL
+    const token = searchParams.get('token')
+    const userData = searchParams.get('user')
+    if (token) {
+      localStorage.setItem('token', token)
+      if (userData) {
+        localStorage.setItem('user', userData)
+      }
+      // Clean URL
+      router.replace('/dashboard')
+    }
+  }, [router, searchParams])
 
   return (
     <div className="min-h-screen bg-black text-white">

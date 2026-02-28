@@ -55,7 +55,8 @@ export async function GET(request: Request) {
     }
 
     const token = Buffer.from(`${user.id}:${Date.now()}:google`).toString('base64')
-    return NextResponse.redirect(new URL(`/dashboard?token=${token}`, request.url))
+    const userJson = encodeURIComponent(JSON.stringify({ id: user.id, email: user.email, username: user.username }))
+    return NextResponse.redirect(new URL(`/dashboard?token=${token}&user=${userJson}`, request.url))
 
   } catch (error) {
     console.error('Google OAuth error:', error)

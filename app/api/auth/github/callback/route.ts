@@ -58,7 +58,8 @@ export async function GET(request: Request) {
     }
 
     const token = Buffer.from(`${user?.id || githubUser.id}:${Date.now()}:github`).toString('base64')
-    return NextResponse.redirect(new URL(`/dashboard?token=${token}`, request.url))
+    const userJson = encodeURIComponent(JSON.stringify({ id: user?.id || githubUser.id, email: user?.email || githubUser.email, username: user?.username || githubUser.login }))
+    return NextResponse.redirect(new URL(`/dashboard?token=${token}&user=${userJson}`, request.url))
 
   } catch (error) {
     console.error('GitHub OAuth error:', error)
