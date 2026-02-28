@@ -111,10 +111,10 @@ export default function CreateGig() {
       return
     }
 
-    // Get user from localStorage (demo auth)
+    // Get user from localStorage
     let userId = null
     if (typeof window !== 'undefined') {
-      const userData = localStorage.getItem('autonomos_user')
+      const userData = localStorage.getItem('user')
       if (userData) {
         const user = JSON.parse(userData)
         userId = user.id
@@ -126,13 +126,24 @@ export default function CreateGig() {
       userId = 'demo-user'
     }
 
+    // Get token from localStorage
+    let token = null
+    if (typeof window !== 'undefined') {
+      token = localStorage.getItem('token')
+    }
+
+    if (!token) {
+      setError('Please log in to create a gig')
+      setLoading(false)
+      return
+    }
+
     try {
       const res = await fetch('/api/gigs', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          // For demo, pass user ID in header
-          'Authorization': `Bearer ${btoa(userId + ':demo')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           title: form.title,
