@@ -11,9 +11,14 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL('/login?error=no_code', request.url))
     }
 
-    const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID!
-    const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET!
-    const CALLBACK_URL = process.env.GITHUB_CALLBACK_URL!
+    const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID
+    const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET
+    const CALLBACK_URL = process.env.GITHUB_CALLBACK_URL
+
+    if (!GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET || !CALLBACK_URL) {
+      console.error('Missing GitHub OAuth env vars in callback')
+      return NextResponse.redirect(new URL('/login?error=config_error', request.url))
+    }
 
     const params = new URLSearchParams()
     params.append('client_id', GITHUB_CLIENT_ID)

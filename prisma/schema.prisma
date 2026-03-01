@@ -177,6 +177,7 @@ model Order {
 
   // Status
   status OrderStatus @default(PENDING)
+  paymentStatus PaymentStatus @default(PENDING)
 
   // Payment
   stripePaymentIntentId String?
@@ -184,6 +185,13 @@ model Order {
   paidAt                DateTime?
   deliveredAt           DateTime?
   completedAt           DateTime?
+  
+  // Escrow
+  escrowStartedAt   DateTime?
+  escrowReleasedAt DateTime?
+  cryptoPaymentId   String?
+  amountPaid       Float?
+  cryptoCurrency   String?
 
   // Content
   requirements  Json?
@@ -205,12 +213,23 @@ enum OrderStatus {
   PENDING
   PAID
   IN_PROGRESS
+  IN_ESCROW
   DELIVERED
   REVISION
   COMPLETED
   CANCELLED
   DISPUTED
   REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  IN_ESCROW
+  RELEASED
+  FAILED
+  REFUNDED
+  EXPIRED
 }
 
 // Service Requests (Buyer posts needs)

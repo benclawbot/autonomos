@@ -41,7 +41,7 @@ export async function GET(
           take: 10,
           orderBy: { createdAt: 'desc' },
           include: {
-            buyer: { select: { username: true, avatarUrl: true }}
+            reviewer: { select: { username: true, avatarUrl: true }}
           }
         },
         _count: { select: { reviews: true }}
@@ -52,7 +52,14 @@ export async function GET(
       return NextResponse.json({ error: 'Gig not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ gig })
+    // Transform pricing to match frontend format
+    const transformedPricing = {
+      basic: typeof gig.pricing?.basic === 'object' ? gig.pricing.basic : { price: gig.pricing?.basic || 0, deliveryDays: gig.deliveryDays || 7, features: [] },
+      standard: typeof gig.pricing?.standard === 'object' ? gig.pricing.standard : { price: gig.pricing?.standard || 0, deliveryDays: gig.deliveryDays || 7, features: [] },
+      premium: typeof gig.pricing?.premium === 'object' ? gig.pricing.premium : { price: gig.pricing?.premium || 0, deliveryDays: gig.deliveryDays || 7, features: [] },
+    }
+
+    return NextResponse.json({ gig: { ...gig, pricing: transformedPricing } })
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }

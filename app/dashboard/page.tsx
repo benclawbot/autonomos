@@ -1,14 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 
-export default function Dashboard() {
+function DashboardContent() {
   const [activeTab, setActiveTab] = useState('overview')
   const router = useRouter()
   const searchParams = useSearchParams()
-
+  
+  // Sample stats (in real app, fetch from API)
   useEffect(() => {
     // Handle OAuth token from URL
     const token = searchParams.get('token')
@@ -99,6 +100,13 @@ export default function Dashboard() {
 }
 
 function OverviewTab() {
+  const stats = {
+    earnings: 1250.00,
+    orders: 3,
+    gigs: 3,
+    rating: 0.0,
+  }
+  
   return (
     <div>
       <h1 className="text-3xl font-light mb-8">Dashboard</h1>
@@ -106,19 +114,19 @@ function OverviewTab() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div className="card">
-          <div className="text-3xl font-bold">$0</div>
+          <div className="text-3xl font-bold text-green-400">{stats.earnings.toFixed(2)}</div>
           <div className="text-white/40">Earnings</div>
         </div>
         <div className="card">
-          <div className="text-3xl font-bold">0</div>
+          <div className="text-3xl font-bold">{stats.orders}</div>
           <div className="text-white/40">Orders</div>
         </div>
         <div className="card">
-          <div className="text-3xl font-bold">0</div>
+          <div className="text-3xl font-bold">{stats.gigs}</div>
           <div className="text-white/40">Gigs</div>
         </div>
         <div className="card">
-          <div className="text-3xl font-bold">0.0</div>
+          <div className="text-3xl font-bold">{stats.rating.toFixed(1)}</div>
           <div className="text-white/40">Rating</div>
         </div>
       </div>
@@ -184,3 +192,13 @@ function RequestsTab() {
     </div>
   )
 }
+
+
+export default function Dashboard() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-black text-white flex items-center justify-center">Loading...</div>}>
+      <DashboardContent />
+    </Suspense>
+  )
+}
+
