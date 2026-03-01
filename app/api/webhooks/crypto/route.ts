@@ -1,40 +1,43 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Lazy-load Prisma
+let prismaInstance: any = null
+async function getPrisma() {
+  if (!prismaInstance) {
+    const { PrismaClient } = await import('@prisma/client')
+    prismaInstance = new PrismaClient()
+  }
+  return prismaInstance
+}
 
 // Plisio callback webhook for crypto payments
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    
-    // Plisio sends callback after payment confirmation
-    const { 
-      invoice_id, 
-      status, 
-      order_number, 
-      amount_received, 
-      confirmations 
-    } = body;
+    const prisma = await getPrisma()
+    const body = await request.json()
 
-    console.log('Plisio webhook received:', body);
+    // Plisio sends callback after payment confirmation
+    const {
+      invoice_id,
+      status,
+      order_number,
+      amount_received,
+      confirmations
+    } = body
+
+    console.log('Plisio webhook received:', body)
 
     // Find order by invoice ID or order number
-    let orderId = order_number;
-    
+    let orderId = order_number
+
     if (!orderId) {
-      // Try to find by invoice_id in metadata
-      const { data: orders } = await supabase
-        .from('orders')
-        .select('id')
-        .eq('payment_id', invoice_id)
-        .limit(1);
-      
-      if (orders && orders.length > 0) {
-        orderId = orders[0].id;
+      // Try to find by invoice_id
+      const order = await prisma.order.findFirst({
+        where: { stripePaymentIntentId: invoice_id }
+      })
+
+      if (order) {
+        orderId = order.id
       }
     }
 
@@ -42,74 +45,75 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: 'Order not found' },
         { status: 404 }
-      );
+      )
     }
 
     // Handle different payment statuses
     switch (status) {
       case 'completed': {
         // Payment confirmed - move to escrow
-        await supabase
-          .from('orders')
-          .update({
-            status: 'in_escrow',
-            payment_status: 'paid',
-            payment_id: invoice_id,
-            amount_paid: amount_received,
-            escrow_started_at: new Date().toISOString(),
-          })
-          .eq('id', orderId);
+        await prisma.order.update({
+          where: { id: orderId },
+          data: {
+            status: 'IN_ESCROW',
+            paymentStatus: 'PAID',
+            cryptoPaymentId: invoice_id,
+            amountPaid: parseFloat(amount_received) || 0,
+            escrowStartedAt: new Date(),
+            paidAt: new Date()
+          }
+        })
 
-        console.log(`Order ${orderId} crypto payment completed - in escrow`);
-        break;
+        console.log(`Order ${orderId} crypto payment completed - in escrow`)
+        break
       }
 
       case 'pending': {
         // Payment initiated but not confirmed
-        await supabase
-          .from('orders')
-          .update({
-            payment_status: 'pending',
-            payment_id: invoice_id,
-          })
-          .eq('id', orderId);
-        break;
+        await prisma.order.update({
+          where: { id: orderId },
+          data: {
+            paymentStatus: 'PENDING',
+            cryptoPaymentId: invoice_id
+          }
+        })
+        break
       }
 
       case 'expired': {
         // Payment expired
-        await supabase
-          .from('orders')
-          .update({
-            status: 'payment_failed',
-            payment_status: 'expired',
-          })
-          .eq('id', orderId);
-        break;
+        await prisma.order.update({
+          where: { id: orderId },
+          data: {
+            status: 'CANCELLED',
+            paymentStatus: 'FAILED'
+          }
+        })
+        break
       }
 
       case 'canceled': {
         // Payment canceled by user
-        await supabase
-          .from('orders')
-          .update({
-            status: 'payment_failed',
-            payment_status: 'canceled',
-          })
-          .eq('id', orderId);
-        break;
+        await prisma.order.update({
+          where: { id: orderId },
+          data: {
+            status: 'CANCELLED',
+            paymentStatus: 'CANCELLED'
+          }
+        })
+        break
       }
 
       default:
-        console.log(`Unhandled Plisio status: ${status}`);
+        console.log(`Unhandled Plisio status: ${status}`)
     }
 
-    return NextResponse.json({ status: 'ok' });
+    return NextResponse.json({ status: 'ok' })
   } catch (error) {
-    console.error('Crypto webhook error:', error);
+    console.error('Crypto webhook error:', error)
     return NextResponse.json(
       { error: 'Webhook handler failed' },
       { status: 500 }
-    );
+    )
   }
 }

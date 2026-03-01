@@ -1,171 +1,184 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server'
 
-// Initialize Supabase admin client (use service role for backend)
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Lazy-load Prisma
+let prismaInstance: any = null
+async function getPrisma() {
+  if (!prismaInstance) {
+    const { PrismaClient } = await import('@prisma/client')
+    prismaInstance = new PrismaClient()
+  }
+  return prismaInstance
+}
+
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { gigId, packageType, amount, currency = 'usd' } = body;
+    const prisma = await getPrisma()
+    const body = await request.json()
+    const { gigId, packageType, amount, currency = 'usd', buyerId } = body
 
     // Validate required fields
     if (!gigId || !packageType || !amount) {
       return NextResponse.json(
         { error: 'Missing required fields: gigId, packageType, amount' },
         { status: 400 }
-      );
+      )
     }
 
     // Get gig details to find seller
-    const { data: gig, error: gigError } = await supabase
-      .from('gigs')
-      .select('id, title, seller_id, seller:users(id, username)')
-      .eq('id', gigId)
-      .single();
+    const gig = await prisma.gig.findUnique({
+      where: { id: gigId },
+      include: { seller: { select: { id: true, username: true } } }
+    })
 
-    if (gigError || !gig) {
+    if (!gig) {
       return NextResponse.json(
         { error: 'Gig not found' },
         { status: 404 }
-      );
+      )
     }
 
-    // Create order with ESCROW status (funds held until delivery)
-    const { data: order, error: orderError } = await supabase
-      .from('orders')
-      .insert({
-        gig_id: gigId,
-        buyer_id: null, // Will be set from session after auth
-        seller_id: gig.seller_id,
-        package_type: packageType,
-        amount: amount,
-        currency,
-        status: 'pending_payment', // Will change to 'escrow' after payment
-        payment_status: 'pending',
+    // Calculate fees (15% platform fee)
+    const platformFee = Math.round(amount * 0.15)
+    const sellerPayout = amount - platformFee
+
+    // Use provided buyerId or create a demo buyer for testing
+    let orderBuyerId = buyerId
+    if (!orderBuyerId) {
+      // Find or create a demo buyer for testing
+      let demoBuyer = await prisma.user.findFirst({
+        where: { email: 'demo@buyer.test' }
       })
-      .select()
-      .single();
-
-    if (orderError) {
-      console.error('Order creation error:', orderError);
-      return NextResponse.json(
-        { error: 'Failed to create order' },
-        { status: 500 }
-      );
+      if (!demoBuyer) {
+        demoBuyer = await prisma.user.create({
+          data: {
+            email: 'demo@buyer.test',
+            username: 'demo_buyer',
+            fullName: 'Demo Buyer',
+            userType: 'HUMAN'
+          }
+        })
+      }
+      orderBuyerId = demoBuyer.id
     }
+
+    // Generate order number
+    const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`
+
+    // Create order with ESCROW status
+    const order = await prisma.order.create({
+      data: {
+        gigId,
+        buyerId: orderBuyerId,
+        sellerId: gig.sellerId,
+        tierName: packageType,
+        originalPrice: amount,
+        platformFee,
+        sellerPayout,
+        currency: currency.toUpperCase(),
+        status: 'PENDING',
+        paymentStatus: 'PENDING',
+        orderNumber,
+      }
+    })
 
     return NextResponse.json({
       success: true,
-      order,
-    });
-  } catch (error) {
-    console.error('Order API error:', error);
+      order: {
+        ...order,
+        orderNumber,
+        gig: { id: gig.id, title: gig.title },
+        seller: { id: gig.sellerId, username: gig.seller.username }
+      }
+    })
+  } catch (error: any) {
+    console.error('Order creation error:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: error.message || 'Failed to create order' },
       { status: 500 }
-    );
+    )
   }
 }
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const orderId = searchParams.get('orderId');
-    const buyerId = searchParams.get('buyerId');
-    const sellerId = searchParams.get('sellerId');
+    const prisma = await getPrisma()
+    const { searchParams } = new URL(request.url)
+    const orderId = searchParams.get('orderId')
+    const buyerId = searchParams.get('buyerId')
+    const sellerId = searchParams.get('sellerId')
 
-    let query = supabase
-      .from('orders')
-      .select(`
-        *,
-        gig:gigs(id, title, thumbnailUrl),
-        buyer:users!buyer_id(id, username, fullName, avatarUrl),
-        seller:users!seller_id(id, username, fullName, avatarUrl)
-      `)
-      .order('created_at', { ascending: false });
+    const where: any = {}
+    if (orderId) where.id = orderId
+    if (buyerId) where.buyerId = buyerId
+    if (sellerId) where.sellerId = sellerId
 
-    if (orderId) {
-      query = query.eq('id', orderId);
-    }
-    if (buyerId) {
-      query = query.eq('buyer_id', buyerId);
-    }
-    if (sellerId) {
-      query = query.eq('seller_id', sellerId);
-    }
+    const orders = await prisma.order.findMany({
+      where,
+      include: {
+        gig: { select: { id: true, title: true, thumbnailUrl: true } },
+        buyer: { select: { id: true, username: true, fullName: true, avatarUrl: true } },
+        seller: { select: { id: true, username: true, fullName: true, avatarUrl: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    })
 
-    const { data: orders, error } = await query;
-
-    if (error) {
-      return NextResponse.json(
-        { error: 'Failed to fetch orders' },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ orders });
-  } catch (error) {
-    console.error('Orders GET error:', error);
+    return NextResponse.json({ orders })
+  } catch (error: any) {
+    console.error('Orders GET error:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: error.message || 'Failed to fetch orders' },
       { status: 500 }
-    );
+    )
   }
 }
 
-// Update order status (webhook calls this after payment)
+// Update order status
 export async function PATCH(request: Request) {
   try {
-    const body = await request.json();
-    const { orderId, status, paymentStatus, paymentId } = body;
+    const prisma = await getPrisma()
+    const body = await request.json()
+    const { orderId, status, paymentStatus, paymentId } = body
 
     if (!orderId) {
       return NextResponse.json(
         { error: 'Missing orderId' },
         { status: 400 }
-      );
+      )
     }
 
-    const updateData: any = {};
-    if (status) updateData.status = status;
-    if (paymentStatus) updateData.payment_status = paymentStatus;
-    if (paymentId) updateData.payment_id = paymentId;
+    const updateData: any = {}
+    if (status) updateData.status = status
+    if (paymentStatus) updateData.paymentStatus = paymentStatus
+    if (paymentId) updateData.paymentId = paymentId
 
     // If payment completed, move to escrow
     if (paymentStatus === 'paid') {
-      updateData.status = 'in_escrow';
-      updateData.escrow_started_at = new Date().toISOString();
+      updateData.status = 'in_escrow'
+      updateData.escrowStartedAt = new Date()
     }
 
     // If delivery confirmed, release escrow to seller
     if (status === 'completed' && paymentStatus === 'released') {
-      updateData.escrow_released_at = new Date().toISOString();
+      updateData.escrowReleasedAt = new Date()
     }
 
-    const { data: order, error } = await supabase
-      .from('orders')
-      .update(updateData)
-      .eq('id', orderId)
-      .select()
-      .single();
+    const order = await prisma.order.update({
+      where: { id: orderId },
+      data: updateData,
+      include: {
+        gig: { select: { id: true, title: true } },
+        seller: { select: { id: true, username: true } }
+      }
+    })
 
-    if (error) {
-      return NextResponse.json(
-        { error: 'Failed to update order' },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ success: true, order });
-  } catch (error) {
-    console.error('Order PATCH error:', error);
+    return NextResponse.json({ success: true, order })
+  } catch (error: any) {
+    console.error('Order PATCH error:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: error.message || 'Failed to update order' },
       { status: 500 }
-    );
+    )
   }
 }

@@ -24,16 +24,14 @@ interface Gig {
 
 const categories = [
   { name: 'All Categories', slug: '' },
-  { name: 'Discord Bots', slug: 'discord-bots' },
-  { name: 'Telegram Bots', slug: 'telegram-bots' },
-  { name: 'WhatsApp Bots', slug: 'whatsapp-bots' },
-  { name: 'AI Agents', slug: 'ai-agents' },
-  { name: 'Web Development', slug: 'web-development' },
-  { name: 'Mobile Apps', slug: 'mobile-apps' },
-  { name: 'Data Analysis', slug: 'data-analysis' },
+  { name: 'Web Design', slug: 'web-design' },
+  { name: 'Bot Building', slug: 'bot-building' },
   { name: 'Automation', slug: 'automation' },
-  { name: 'API Development', slug: 'api-development' },
-  { name: 'Chatbots', slug: 'chatbots' },
+  { name: 'Data', slug: 'data' },
+  { name: 'AI / ML', slug: 'ai-ml' },
+  { name: 'Human Tasks', slug: 'human-tasks' },
+  { name: 'SEO', slug: 'seo' },
+  { name: 'Content', slug: 'content' },
 ]
 
 export default function Explore() {
@@ -156,7 +154,7 @@ export default function Explore() {
               >
                 <div className="aspect-video bg-white/5 rounded-lg mb-4 flex items-center justify-center">
                   {gig.thumbnailUrl ? (
-                    <img src={gig.thumbnailUrl} alt={gig.title} className="w-full h-full object-cover rounded-lg" />
+                    <img src={gig.thumbnailUrl} alt={gig.title} className="w-full h-full object-cover rounded-lg" loading="lazy" decoding="async" />
                   ) : (
                     <span className="text-4xl">🤖</span>
                   )}

@@ -156,7 +156,7 @@ export default function OrdersPage() {
                   {/* Gig Thumbnail */}
                   <div className="w-20 h-20 bg-white/5 rounded-lg overflow-hidden flex-shrink-0">
                     {order.gig.thumbnailUrl ? (
-                      <img src={order.gig.thumbnailUrl} alt={order.gig.title} className="w-full h-full object-cover" />
+                      <img src={order.gig.thumbnailUrl} alt={order.gig.title} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-2xl">🤖</div>
                     )}

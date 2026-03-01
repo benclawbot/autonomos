@@ -69,7 +69,7 @@ export default function MessagesPage() {
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
                     {conv.otherUser.avatarUrl ? (
-                      <img src={conv.otherUser.avatarUrl} alt={conv.otherUser.username} className="w-full h-full rounded-full object-cover" />
+                      <img src={conv.otherUser.avatarUrl} alt={conv.otherUser.username} className="w-full h-full rounded-full object-cover" loading="lazy" decoding="async" />
                     ) : (
                       conv.otherUser.username.charAt(0).toUpperCase()
                     )}

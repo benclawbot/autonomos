@@ -1,152 +1,138 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Lazy-load Prisma
+let prismaInstance: any = null
+async function getPrisma() {
+  if (!prismaInstance) {
+    const { PrismaClient } = await import('@prisma/client')
+    prismaInstance = new PrismaClient()
+  }
+  return prismaInstance
+}
+
+export const dynamic = 'force-dynamic'
 
 // GET /api/disputes?orderId=xxx - Get dispute for an order
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const orderId = searchParams.get('orderId');
+    const prisma = await getPrisma()
+    const { searchParams } = new URL(request.url)
+    const orderId = searchParams.get('orderId')
 
     if (!orderId) {
       return NextResponse.json(
         { error: 'Order ID required' },
         { status: 400 }
-      );
+      )
     }
 
-    const { data: dispute, error } = await supabase
-      .from('disputes')
-      .select(`
-        *,
-        order:order_id(
-          id,
-          gig_id,
-          gig:gigs(id, title)
-        ),
-        raiser:raiser_id(
-          id,
-          username,
-          fullName:full_name,
-          avatarUrl:avatar_url
-        )
-      `)
-      .eq('order_id', orderId)
-      .single();
+    const dispute = await prisma.dispute.findUnique({
+      where: { orderId },
+      include: {
+        order: {
+          include: {
+            gig: { select: { id: true, title: true } }
+          }
+        },
+        raiser: { select: { id: true, username: true, fullName: true, avatarUrl: true } }
+      }
+    })
 
-    if (error) {
-      return NextResponse.json({ dispute: null });
-    }
-
-    return NextResponse.json({ dispute });
-  } catch (error) {
-    console.error('Disputes GET error:', error);
+    return NextResponse.json({ dispute: dispute || null })
+  } catch (error: any) {
+    console.error('Disputes GET error:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: error.message || 'Failed to fetch dispute' },
       { status: 500 }
-    );
+    )
   }
 }
 
 // POST /api/disputes - Open a dispute
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { orderId, raiserId, reason } = body;
+    const prisma = await getPrisma()
+    const body = await request.json()
+    const { orderId, raiserId, reason } = body
 
     if (!orderId || !raiserId || !reason) {
       return NextResponse.json(
         { error: 'Missing required fields: orderId, raiserId, reason' },
         { status: 400 }
-      );
+      )
     }
 
     // Get order details
-    const { data: order, error: orderError } = await supabase
-      .from('orders')
-      .select('id, buyer_id, seller_id, status')
-      .eq('id', orderId)
-      .single();
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { buyerId: true, sellerId: true, status: true }
+    })
 
-    if (orderError || !order) {
+    if (!order) {
       return NextResponse.json(
         { error: 'Order not found' },
         { status: 404 }
-      );
+      )
     }
 
     // Verify user is part of this order
-    if (order.buyer_id !== raiserId && order.seller_id !== raiserId) {
+    if (order.buyerId !== raiserId && order.sellerId !== raiserId) {
       return NextResponse.json(
         { error: 'Not authorized to dispute this order' },
         { status: 403 }
-      );
+      )
     }
 
     // Check if dispute already exists
-    const { data: existing } = await supabase
-      .from('disputes')
-      .select('id')
-      .eq('order_id', orderId)
-      .single();
+    const existing = await prisma.dispute.findUnique({
+      where: { orderId }
+    })
 
     if (existing) {
       return NextResponse.json(
         { error: 'Dispute already exists for this order' },
         { status: 400 }
-      );
+      )
     }
 
     // Create dispute
-    const { data: dispute, error } = await supabase
-      .from('disputes')
-      .insert({
-        order_id: orderId,
-        raiser_id: raiserId,
+    const dispute = await prisma.dispute.create({
+      data: {
+        orderId,
+        raiserId,
         reason,
-        status: 'open',
-      })
-      .select()
-      .single();
-
-    if (error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      );
-    }
+        status: 'OPEN'
+      }
+    })
 
     // Update order status to disputed
-    await supabase
-      .from('orders')
-      .update({ status: 'DISPUTED' })
-      .eq('id', orderId);
+    await prisma.order.update({
+      where: { id: orderId },
+      data: { status: 'DISPUTED' }
+    })
 
-    return NextResponse.json({ dispute });
-  } catch (error) {
-    console.error('Disputes POST error:', error);
+    return NextResponse.json({ dispute })
+  } catch (error: any) {
+    console.error('Disputes POST error:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: error.message || 'Failed to create dispute' },
       { status: 500 }
-    );
+    )
   }
 }
 
 // PATCH /api/disputes - Resolve/update dispute (admin only)
 export async function PATCH(request: Request) {
   try {
-    const body = await request.json();
-    const { disputeId, status, resolution, adminId } = body;
+    const prisma = await getPrisma()
+    const body = await request.json()
+    const { disputeId, status, resolution, adminId } = body
 
     if (!disputeId || !status) {
       return NextResponse.json(
         { error: 'Missing required fields: disputeId, status' },
         { status: 400 }
-      );
+      )
     }
 
     // Verify admin (in real app, check admin role)
@@ -154,61 +140,43 @@ export async function PATCH(request: Request) {
       return NextResponse.json(
         { error: 'Admin ID required' },
         { status: 403 }
-      );
+      )
     }
 
     const updateData: any = {
-      status,
-      resolved_at: new Date().toISOString(),
-    };
+      status: status.toUpperCase()
+    }
 
     if (resolution) {
-      updateData.resolution = resolution;
+      updateData.resolution = resolution
     }
 
-    const { data: dispute, error } = await supabase
-      .from('disputes')
-      .update(updateData)
-      .eq('id', disputeId)
-      .select()
-      .single();
-
-    if (error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      );
+    if (status === 'resolved') {
+      updateData.resolvedAt = new Date()
     }
+
+    const dispute = await prisma.dispute.update({
+      where: { id: disputeId },
+      data: updateData
+    })
 
     // If resolved, update order status based on resolution
     if (status === 'resolved') {
-      // Get order to decide what to do next
-      const { data: resolvedDispute } = await supabase
-        .from('disputes')
-        .select('order_id, resolution')
-        .eq('id', disputeId)
-        .single();
+      const resolutionLower = resolution?.toLowerCase() || ''
+      const orderStatus = resolutionLower.includes('refund') ? 'REFUNDED' : 'COMPLETED'
 
-      if (resolvedDispute) {
-        // Parse resolution to determine order action
-        // Could be: "refund", "release", "cancel"
-        const orderStatus = resolution?.toLowerCase().includes('refund') 
-          ? 'REFUNDED' 
-          : 'COMPLETED';
-
-        await supabase
-          .from('orders')
-          .update({ status: orderStatus })
-          .eq('id', resolvedDispute.order_id);
-      }
+      await prisma.order.update({
+        where: { id: dispute.orderId },
+        data: { status: orderStatus }
+      })
     }
 
-    return NextResponse.json({ dispute });
-  } catch (error) {
-    console.error('Disputes PATCH error:', error);
+    return NextResponse.json({ dispute })
+  } catch (error: any) {
+    console.error('Disputes PATCH error:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: error.message || 'Failed to update dispute' },
       { status: 500 }
-    );
+    )
   }
 }

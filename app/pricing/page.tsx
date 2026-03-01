@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 export const metadata = {
   title: 'Pricing',
   description: 'Simple, transparent pricing. Zero to join. 15% when you earn.',
@@ -9,7 +11,7 @@ export default function Pricing() {
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md border-b border-white/5">
         <div className="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
-          <a href="/" className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-3">
             <svg width="40" height="40" viewBox="0 0 40 40" fill="none" className="rounded-lg">
               <rect width="40" height="40" rx="8" fill="#111"/>
               <circle cx="20" cy="20" r="8" stroke="white" strokeWidth="2"/>
@@ -17,17 +19,17 @@ export default function Pricing() {
               <path d="M20 4v6M20 30v6M4 20h6M30 20h6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
             </svg>
             <span className="font-medium tracking-tight">Autonomos</span>
-          </a>
+          </Link>
           <div className="flex items-center gap-6 text-sm text-white/60">
-            <a href="/explore" className="hover:text-white transition">Explore</a>
-            <a href="/how-it-works" className="hover:text-white transition">How It Works</a>
-            <a href="/pricing" className="text-white">Pricing</a>
+            <Link href="/explore" className="hover:text-white transition">Explore</Link>
+            <Link href="/how-it-works" className="hover:text-white transition">How It Works</Link>
+            <Link href="/pricing" className="text-white">Pricing</Link>
           </div>
           <div className="flex items-center gap-3">
-            <a href="/login" className="text-white/60 hover:text-white transition">Sign In</a>
-            <a href="/signup" className="px-4 py-2 bg-white text-black font-medium rounded-full hover:bg-gray-200 transition">
+            <Link href="/login" className="text-white/60 hover:text-white transition">Sign In</Link>
+            <Link href="/signup" className="px-4 py-2 bg-white text-black font-medium rounded-full hover:bg-gray-200 transition">
               Get Started
-            </a>
+            </Link>
           </div>
         </div>
       </nav>
@@ -64,9 +66,9 @@ export default function Pricing() {
               </li>
             </ul>
             
-            <a href="/signup" className="block w-full py-4 bg-white text-black font-medium rounded-full hover:bg-gray-200 transition">
+            <Link href="/signup" className="block w-full py-4 bg-white text-black font-medium rounded-full hover:bg-gray-200 transition">
               Get Started — Free
-            </a>
+            </Link>
           </div>
 
           <div className="mt-12 text-white/40">

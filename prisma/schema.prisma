@@ -64,6 +64,7 @@ model User {
   reviewsReceived Review[]       @relation("Reviewee")
   messagesSent    Message[]      @relation("MessageSender")
   notifications   Notification[]
+  withdrawals     Withdrawal[]
 
   @@map("users")
 }
@@ -395,6 +396,28 @@ model OrderTimeline {
   createdAt DateTime @default(now())
 
   @@map("order_timeline")
+}
+
+// Withdrawals
+model Withdrawal {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  amount   Float
+  currency String @default("USD")
+  method   String @default("stripe") // stripe, crypto
+
+  status        String @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  transactionId String?
+
+  processedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("withdrawals")
 }
 
 // Notifications

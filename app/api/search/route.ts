@@ -1,134 +1,119 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Lazy-load Prisma
+let prismaInstance: any = null
+async function getPrisma() {
+  if (!prismaInstance) {
+    const { PrismaClient } = await import('@prisma/client')
+    prismaInstance = new PrismaClient()
+  }
+  return prismaInstance
+}
+
+export const dynamic = 'force-dynamic'
 
 // GET /api/search?q=xxx&category=xxx&type=bot|human&minPrice=xxx&maxPrice=xxx
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    
-    const query = searchParams.get('q') || '';
-    const category = searchParams.get('category');
-    const type = searchParams.get('type'); // 'bot', 'human', or 'both'
-    const minPrice = searchParams.get('minPrice');
-    const maxPrice = searchParams.get('maxPrice');
-    const sortBy = searchParams.get('sortBy') || 'created_at'; // 'price', 'rating', 'sales', 'created_at'
-    const sortOrder = searchParams.get('sortOrder') || 'desc';
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const prisma = await getPrisma()
+    const { searchParams } = new URL(request.url)
 
-    // Build the query
-    let dbQuery = supabase
-      .from('gigs')
-      .select(`
-        *,
-        seller:users!seller_id(
-          id,
-          username,
-          fullName:full_name,
-          avatarUrl:avatar_url,
-          rating,
-          totalSales:total_sales
-        ),
-        category:categories!category_id(
-          id,
-          name,
-          slug
-        ),
-        _count:reviews(count)
-      `)
-      .eq('status', 'active');
+    const query = searchParams.get('q') || ''
+    const category = searchParams.get('category')
+    const type = searchParams.get('type') // 'bot', 'human', or 'both'
+    const minPrice = searchParams.get('minPrice')
+    const maxPrice = searchParams.get('maxPrice')
+    const sortBy = searchParams.get('sortBy') || 'createdAt'
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '20')
+
+    // Build the where clause
+    const where: any = { status: 'ACTIVE' }
 
     // Apply text search if query provided
     if (query) {
-      dbQuery = dbQuery.or(`title.ilike.%${query}%,description.ilike.%${query}%,tags.cs.{${query}}`);
+      where.OR = [
+        { title: { contains: query, mode: 'insensitive' } },
+        { description: { contains: query, mode: 'insensitive' } },
+        { tags: { hasSome: [query.toLowerCase()] } }
+      ]
     }
 
     // Filter by category
     if (category) {
-      dbQuery = dbQuery.eq('category.slug', category);
+      where.category = { slug: category }
     }
 
     // Filter by type (bot/human)
     if (type && type !== 'both') {
-      dbQuery = dbQuery.eq('type', type);
+      where.type = type.toUpperCase()
     }
 
-    // Filter by price range
-    if (minPrice) {
-      dbQuery = dbQuery.gte('pricing', parseInt(minPrice));
-    }
-    if (maxPrice) {
-      dbQuery = dbQuery.lte('pricing', parseInt(maxPrice));
+    // Filter by price range (check in pricing JSON)
+    if (minPrice || maxPrice) {
+      where.pricing = {}
     }
 
     // Apply sorting
+    let orderBy: any = { createdAt: 'desc' }
     switch (sortBy) {
       case 'price':
-        dbQuery = dbQuery.order('pricing', { ascending: sortOrder === 'asc' });
-        break;
+        orderBy = { pricing: 'asc' }
+        break
       case 'rating':
-        dbQuery = dbQuery.order('seller.rating', { ascending: sortOrder === 'asc' });
-        break;
+        orderBy = { seller: { rating: 'desc' } }
+        break
       case 'sales':
-        dbQuery = dbQuery.order('total_orders', { ascending: sortOrder === 'asc' });
-        break;
-      case 'created_at':
+        orderBy = { totalOrders: 'desc' }
+        break
+      case 'createdAt':
       default:
-        dbQuery = dbQuery.order('created_at', { ascending: sortOrder === 'asc' });
+        orderBy = { createdAt: 'desc' }
     }
 
-    // Apply pagination
-    const from = (page - 1) * limit;
-    const to = from + limit - 1;
-    dbQuery = dbQuery.range(from, to);
+    // Get paginated results
+    const skip = (page - 1) * limit
 
-    const { data: gigs, error } = await dbQuery;
+    const [gigs, total] = await Promise.all([
+      prisma.gig.findMany({
+        where,
+        include: {
+          seller: { select: { id: true, username: true, fullName: true, avatarUrl: true, rating: true, totalSales: true } },
+          category: { select: { id: true, name: true, slug: true } },
+          _count: { select: { reviews: true } }
+        },
+        orderBy,
+        skip,
+        take: limit
+      }),
+      prisma.gig.count({ where })
+    ])
 
-    if (error) {
-      console.error('Search error:', error);
-      return NextResponse.json(
-        { error: 'Search failed' },
-        { status: 500 }
-      );
+    // Filter by price range in JavaScript (since pricing is JSON)
+    let filteredGigs = gigs
+    if (minPrice || maxPrice) {
+      filteredGigs = gigs.filter((gig: any) => {
+        const price = gig.pricing?.basic?.price || gig.pricing?.standard?.price || gig.pricing?.premium?.price || 0
+        if (minPrice && price < parseInt(minPrice)) return false
+        if (maxPrice && price > parseInt(maxPrice)) return false
+        return true
+      })
     }
-
-    // Get total count for pagination
-    let countQuery = supabase
-      .from('gigs')
-      .select('id', { count: 'exact' })
-      .eq('status', 'active');
-
-    if (query) {
-      countQuery = countQuery.or(`title.ilike.%${query}%,description.ilike.%${query}%`);
-    }
-    if (category) {
-      countQuery = countQuery.eq('category.slug', category);
-    }
-    if (type && type !== 'both') {
-      countQuery = countQuery.eq('type', type);
-    }
-
-    const { count } = await countQuery;
 
     return NextResponse.json({
-      gigs,
+      gigs: filteredGigs,
       pagination: {
         page,
         limit,
-        total: count || 0,
-        totalPages: Math.ceil((count || 0) / limit),
+        total,
+        totalPages: Math.ceil(total / limit)
       }
-    });
-  } catch (error) {
-    console.error('Search API error:', error);
+    })
+  } catch (error: any) {
+    console.error('Search API error:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: error.message || 'Search failed' },
       { status: 500 }
-    );
+    )
   }
 }

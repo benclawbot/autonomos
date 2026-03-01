@@ -169,7 +169,7 @@ export default function GigDetail() {
                 {/* Thumbnail */}
                 {gig.thumbnailUrl && (
                   <div className="aspect-video bg-white/5 rounded-lg overflow-hidden mb-6">
-                    <img src={gig.thumbnailUrl} alt={gig.title} className="w-full h-full object-cover" />
+                    <img src={gig.thumbnailUrl} alt={gig.title} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                   </div>
                 )}
               </div>
@@ -186,7 +186,7 @@ export default function GigDetail() {
                 <div className="flex items-start gap-4">
                   <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center text-2xl overflow-hidden">
                     {gig.seller.avatarUrl ? (
-                      <img src={gig.seller.avatarUrl} alt={gig.seller.username} className="w-full h-full object-cover" />
+                      <img src={gig.seller.avatarUrl} alt={gig.seller.username} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                     ) : (
                       <span>👤</span>
                     )}
@@ -222,7 +222,7 @@ export default function GigDetail() {
                         <div className="flex items-start gap-3">
                           <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-sm">
                             {review.buyer.avatarUrl ? (
-                              <img src={review.buyer.avatarUrl} alt={review.buyer.username} className="w-full h-full object-cover rounded-full" />
+                              <img src={review.buyer.avatarUrl} alt={review.buyer.username} className="w-full h-full object-cover rounded-full" loading="lazy" decoding="async" />
                             ) : (
                               review.buyer.username.charAt(0).toUpperCase()
                             )}
