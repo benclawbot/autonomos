@@ -1,106 +1,118 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Lazy-load Prisma
+let prismaInstance: any = null
+async function getPrisma() {
+  if (!prismaInstance) {
+    const { PrismaClient } = await import('@prisma/client')
+    prismaInstance = new PrismaClient()
+  }
+  return prismaInstance
+}
 
-// GET /api/users/me - Get current user profile
+// GET /api/users?userId=xxx - Get user profile
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
+    const prisma = await getPrisma()
+    const { searchParams } = new URL(request.url)
+    const userId = searchParams.get('userId')
 
     if (!userId) {
       return NextResponse.json(
         { error: 'User ID required' },
         { status: 400 }
-      );
+      )
     }
 
-    const { data: user, error } = await supabase
-      .from('users')
-      .select(`
-        id,
-        email,
-        username,
-        fullName:full_name,
-        avatarUrl:avatar_url,
-        userType:user_type,
-        bio,
-        skills,
-        hourlyRate:hourly_rate,
-        stripeAccountId:stripe_account_id,
-        isVerified:is_verified,
-        isActive:is_active,
-        rating,
-        totalSales:total_sales,
-        totalEarnings:total_earnings,
-        createdAt:created_at
-      `)
-      .eq('id', userId)
-      .single();
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        fullName: true,
+        avatarUrl: true,
+        userType: true,
+        bio: true,
+        skills: true,
+        hourlyRate: true,
+        stripeAccountId: true,
+        emailVerified: true,
+        isActive: true,
+        rating: true,
+        totalSales: true,
+        balance: true,
+        createdAt: true
+      }
+    })
 
-    if (error || !user) {
+    if (!user) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
-      );
+      )
     }
 
-    return NextResponse.json({ user });
-  } catch (error) {
-    console.error('User GET error:', error);
+    return NextResponse.json({ user })
+  } catch (error: any) {
+    console.error('User GET error:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: error.message || 'Internal server error' },
       { status: 500 }
-    );
+    )
   }
 }
 
-// PUT /api/users/me - Update current user profile
+// PUT /api/users - Update user profile
 export async function PUT(request: Request) {
   try {
-    const body = await request.json();
-    const { userId, ...updates } = body;
+    const prisma = await getPrisma()
+    const body = await request.json()
+    const { userId, ...updates } = body
 
     if (!userId) {
       return NextResponse.json(
         { error: 'User ID required' },
         { status: 400 }
-      );
+      )
     }
 
-    // Map camelCase to snake_case for database
-    const dbUpdates: any = {};
-    if (updates.fullName) dbUpdates.full_name = updates.fullName;
-    if (updates.avatarUrl) dbUpdates.avatar_url = updates.avatarUrl;
-    if (updates.bio) dbUpdates.bio = updates.bio;
-    if (updates.skills) dbUpdates.skills = updates.skills;
-    if (updates.hourlyRate) dbUpdates.hourly_rate = updates.hourlyRate;
-    if (updates.stripeAccountId) dbUpdates.stripe_account_id = updates.stripeAccountId;
+    // Build update data
+    const updateData: any = {}
+    if (updates.fullName !== undefined) updateData.fullName = updates.fullName
+    if (updates.avatarUrl !== undefined) updateData.avatarUrl = updates.avatarUrl
+    if (updates.bio !== undefined) updateData.bio = updates.bio
+    if (updates.skills !== undefined) updateData.skills = updates.skills
+    if (updates.hourlyRate !== undefined) updateData.hourlyRate = updates.hourlyRate
+    if (updates.stripeAccountId !== undefined) updateData.stripeAccountId = updates.stripeAccountId
 
-    const { data: user, error } = await supabase
-      .from('users')
-      .update(dbUpdates)
-      .eq('id', userId)
-      .select()
-      .single();
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        fullName: true,
+        avatarUrl: true,
+        userType: true,
+        bio: true,
+        skills: true,
+        hourlyRate: true,
+        stripeAccountId: true,
+        isActive: true,
+        rating: true,
+        totalSales: true,
+        createdAt: true
+      }
+    })
 
-    if (error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ user });
-  } catch (error) {
-    console.error('User PUT error:', error);
+    return NextResponse.json({ user })
+  } catch (error: any) {
+    console.error('User PUT error:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: error.message || 'Internal server error' },
       { status: 500 }
-    );
+    )
   }
 }
