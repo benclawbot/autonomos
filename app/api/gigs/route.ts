@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     // Extract user ID from Authorization header
     const authHeader = request.headers.get('Authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized - Please log in' }, { status: 401 })
     }
     
     const token = authHeader.replace('Bearer ', '')
@@ -68,13 +68,39 @@ export async function POST(request: Request) {
     // Verify user exists
     const user = await prisma.user.findUnique({ where: { id: userId } })
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      return NextResponse.json({ error: 'User not found - Please log in again' }, { status: 404 })
+    }
+    
+    // Validate pricing - at least one tier required
+    if (!body.pricing || Object.keys(body.pricing).length === 0) {
+      return NextResponse.json({ error: 'At least one pricing tier is required' }, { status: 400 })
+    }
+    
+    // Validate title and description
+    if (!body.title || body.title.trim().length < 10) {
+      return NextResponse.json({ error: 'Title must be at least 10 characters' }, { status: 400 })
+    }
+    
+    if (!body.description || body.description.trim().length < 20) {
+      return NextResponse.json({ error: 'Description must be at least 20 characters' }, { status: 400 })
+    }
+    
+    if (!body.categoryId) {
+      return NextResponse.json({ error: 'Category is required' }, { status: 400 })
     }
     
     // Create gig with seller relation
     const gig = await prisma.gig.create({
       data: {
-        ...body,
+        title: body.title,
+        description: body.description,
+        type: body.type || 'HUMAN',
+        categoryId: body.categoryId,
+        thumbnailUrl: body.thumbnailUrl || null,
+        tags: body.tags || [],
+        pricing: body.pricing,
+        deliveryDays: body.deliveryDays || 7,
+        revisionRounds: body.revisionRounds || 2,
         sellerId: userId,
         status: 'ACTIVE'
       }
