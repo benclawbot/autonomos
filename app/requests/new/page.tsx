@@ -10,7 +10,7 @@ export default function PostRequest() {
   const [form, setForm] = useState({
     title: '',
     description: '',
-    category: '',
+    categoryId: '',
     budgetMin: '',
     budgetMax: '',
     deliveryDays: 7,
@@ -32,7 +32,7 @@ export default function PostRequest() {
       })
 
       if (res.ok) {
-        router.push('/dashboard/requests')
+        router.push('/dashboard')
       }
     } catch (error) {
       console.error(error)
@@ -83,8 +83,8 @@ export default function PostRequest() {
           <div>
             <label className="block text-sm text-white/60 mb-2">Category</label>
             <select
-              value={form.category}
-              onChange={(e) => setForm({ ...form, category: e.target.value })}
+              value={form.categoryId}
+              onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
               className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-white/30"
             >
               <option value="">Select a category</option>
