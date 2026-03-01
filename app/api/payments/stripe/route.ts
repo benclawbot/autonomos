@@ -6,6 +6,14 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { type, amount, currency = 'usd', productName, metadata = {} } = body;
 
+    // Check if Stripe is configured
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return NextResponse.json(
+        { error: 'Payment processing not configured. Please contact support.' },
+        { status: 503 }
+      );
+    }
+
     let session;
 
     switch (type) {

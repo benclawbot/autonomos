@@ -3,9 +3,12 @@
 
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+// Initialize stripe - will throw error if key is missing
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2023-10-16',
 });
+
+export { stripe };
 
 // Create a checkout session for payment
 export async function createCheckoutSession({

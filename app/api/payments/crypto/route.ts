@@ -6,6 +6,14 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { action, ...params } = body;
 
+    // Check if Plisio is configured
+    if (!process.env.PLISIO_API_KEY) {
+      return NextResponse.json(
+        { error: 'Crypto payments not configured. Please contact support.' },
+        { status: 503 }
+      );
+    }
+
     switch (action) {
       case 'create': {
         const result = await createCryptoPaymentLink({
