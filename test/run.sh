@@ -54,7 +54,8 @@ echo ""
 # Check if liteLLM proxy is running
 if ! curl -s http://localhost:4000/health > /dev/null 2>&1; then
   echo -e "${YELLOW}⚠️  Starting liteLLM proxy...${NC}"
-  export MISTRAL_API_KEY="H4OUE5LZB4xWW8H2v8wA3oXZRz50D4C8"
+  # Never commit provider keys; export MISTRAL_API_KEY in your shell first.
+  export MISTRAL_API_KEY="${MISTRAL_API_KEY:?MISTRAL_API_KEY must be set to start the liteLLM proxy}"
   litellm --config /home/tom/.config/litellm/config.yaml --port 4000 &
   sleep 3
 fi
